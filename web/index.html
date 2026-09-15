@@ -80,9 +80,9 @@
     .statbox span { color: var(--muted); font-size: 12px; }
     section { margin-top: 56px; }
     h2 { margin: 0 0 6px; font-size: 30px; letter-spacing: -.6px; }
-    .hint { color: var(--muted); margin: 0 0 16px; }
+    .hint { color: var(--muted); margin: 0 0 16px; line-height: 1.55; }
     label { display: block; margin: 12px 0 6px; color: var(--muted); font-size: 12px; }
-    input {
+    input, select {
       width: 100%; padding: 12px 13px; border-radius: 12px;
       border: 1px solid var(--line); background: #0b1420; color: white;
       font-family: inherit; font-size: 14px;
@@ -109,6 +109,7 @@
     <nav class="menus">
       <a href="#create">Create</a>
       <a href="#pay">Pay</a>
+      <a href="#bridge">Bridge</a>
       <a href="#activity">Activity</a>
       <a href="#about">About</a>
     </nav>
@@ -125,13 +126,14 @@
         <div class="pills">
           <span class="pill">Arc Testnet · 5042002</span>
           <span class="pill">USDC</span>
+          <span class="pill">CCTP v2</span>
           <span class="pill">Non-custodial</span>
         </div>
         <h1>Get paid in USDC with one link.</h1>
-        <p class="lede">Create an on-chain payment request, share the URL, and settle directly to your wallet. No custody. No backend.</p>
+        <p class="lede">Create an on-chain payment request, bridge USDC onto Arc, and settle directly to your wallet. No custody. No backend.</p>
         <div class="row">
           <a class="btn" href="#create">Create a PayLink</a>
-          <a class="btn ghost" href="#pay">Pay a request</a>
+          <a class="btn ghost" href="#bridge">Bridge USDC</a>
         </div>
         <div class="status" id="netStatus"></div>
       </div>
@@ -151,18 +153,18 @@
     <div class="grid3">
       <div class="card">
         <div class="step">01</div>
-        <h3>Create</h3>
-        <p>Lock in amount, memo, optional payer, and deadline. The connected wallet becomes the recipient.</p>
+        <h3>Bridge</h3>
+        <p>Move native USDC from Sepolia, Base, or Fuji onto Arc with Circle CCTP v2.</p>
       </div>
       <div class="card">
         <div class="step">02</div>
-        <h3>Share</h3>
-        <p>Send a single URL with <span class="mono">?id=N</span>. Works from chat, email, or QR.</p>
+        <h3>Create</h3>
+        <p>Lock amount, memo, optional payer, and deadline. The connected wallet is the recipient.</p>
       </div>
       <div class="card">
         <div class="step">03</div>
         <h3>Settle</h3>
-        <p>Payer approves USDC and calls <span class="mono">pay()</span>. Funds move straight to the recipient.</p>
+        <p>Payer approves USDC and calls pay(). Funds move straight to the recipient.</p>
       </div>
     </div>
 
@@ -210,6 +212,38 @@
       </div>
     </section>
 
+    <section id="bridge">
+      <h2>Bridge USDC</h2>
+      <p class="hint">Circle CCTP v2 · burn on source, mint native USDC on destination.</p>
+      <div class="split">
+        <div class="card">
+          <label>From</label>
+          <select id="bridgeFrom"></select>
+          <label>To</label>
+          <select id="bridgeTo"></select>
+          <label>Amount (USDC)</label>
+          <input id="bridgeAmount" type="number" min="0" step="0.01" value="1" />
+          <div class="row" style="margin-top:16px">
+            <button class="ghost" id="btnSwitchFrom">Switch to source</button>
+            <button id="btnBurn">Approve & burn</button>
+          </div>
+          <div class="row" style="margin-top:10px">
+            <button class="ghost" id="btnSwitchTo">Switch to destination</button>
+            <button id="btnMint">Mint on destination</button>
+          </div>
+          <div class="status" id="bridgeStatus"></div>
+        </div>
+        <div class="card">
+          <h3>How it works</h3>
+          <p class="hint">1. Source wallet needs USDC and gas on that chain.<br>
+          2. Burn creates a CCTP message.<br>
+          3. Circle attests it (about 1–3 min on Sepolia / Base / Fuji).<br>
+          4. Mint credits native USDC on the destination wallet.</p>
+          <p class="hint">Need test USDC? <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">Circle faucet</a></p>
+        </div>
+      </div>
+    </section>
+
     <section id="activity">
       <h2>Recent activity</h2>
       <p class="hint">Latest on-chain requests from the PayLink contract.</p>
@@ -229,7 +263,7 @@
       <div class="split">
         <div class="card">
           <h3>What it is</h3>
-          <p class="hint" style="margin:8px 0 0">PayLink is a payment-request primitive on Arc. Use it for invoices, split bills, bounties, or checkout demos. Settlement is native USDC and non-custodial.</p>
+          <p class="hint" style="margin:8px 0 0">PayLink is a payment-request primitive on Arc. Bridge USDC in with CCTP, create a shareable request, and settle on-chain. Non-custodial.</p>
         </div>
         <div class="card">
           <h3>Network</h3>
@@ -242,7 +276,7 @@
       </div>
     </section>
 
-    <footer>PayLink · Arc Testnet · non-custodial USDC payment links</footer>
+    <footer>PayLink · Arc Testnet · CCTP v2 · non-custodial USDC payment links</footer>
   </main>
 
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
