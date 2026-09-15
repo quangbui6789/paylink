@@ -14,6 +14,7 @@ const PAYLINK_ABI = [
   "function nextId() view returns (uint256)",
   "event RequestCreated(uint256 indexed id, address indexed recipient, address payerHint, uint96 amount, uint64 deadline, string memo)"
 ];
+
 const ERC20_ABI = [
   "function approve(address spender, uint256 value) returns (bool)",
   "function allowance(address owner, address spender) view returns (uint256)"
@@ -23,23 +24,27 @@ const $ = (id) => document.getElementById(id);
 let provider, signer, account, lastLink = "";
 
 const short = (a) => (a ? a.slice(0, 6) + "…" + a.slice(-4) : "");
+
 function setText(id, text, cls) {
   const el = $(id);
+  if (!el) return;
   el.className = "status" + (cls ? " " + cls : "");
   el.textContent = text;
 }
+
 function payUrl(id) {
   const url = new URL(location.href);
   url.hash = "pay";
   url.searchParams.set("id", String(id));
   return url.toString();
 }
+
 function readProvider() {
   return provider || new ethers.JsonRpcProvider(RPC);
 }
 
 async function connect() {
-  if (!window.ethereum) return setText("netStatus", "Cần MetaMask / Rabby.", "bad");
+  if (!window.ethereum) return setText("netStatus", "Install MetaMask or Rabby.", "bad");
   provider = new ethers.BrowserProvider(window.ethereum);
   await provider.send("eth_requestAccounts", []);
   signer = await provider.getSigner();
@@ -56,11 +61,14 @@ async function ensureNetwork(force) {
     return true;
   }
   if (!force) {
-    setText("netStatus", `Sai mạng ${net.chainId}. Bấm Arc Testnet.`, "warn");
+    setText("netStatus", `Wrong network ${net.chainId}. Switch to Arc Testnet.`, "warn");
     return false;
   }
   try {
-    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CHAIN_HEX }] });
+    await window.ethereum.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: CHAIN_HEX }]
+    });
   } catch (err) {
     if (err.code === 4902 || String(err.message || "").includes("Unrecognized")) {
       await window.ethereum.request({
@@ -82,7 +90,7 @@ async function ensureNetwork(force) {
   signer = await provider.getSigner();
   account = await signer.getAddress();
   $("walletPill").textContent = short(account);
-  setText("netStatus", "Đã chuyển Arc Testnet", "ok");
+  setText("netStatus", "Switched to Arc Testnet", "ok");
   return true;
 }
 
@@ -104,7 +112,7 @@ async function loadRequest(id) {
   const c = new ethers.Contract(PAYLINK, PAYLINK_ABI, readProvider());
   const r = await c.getRequest(id);
   if (Number(r.status) === 0) {
-    setText("payStatus", `Request #${id} không tồn tại.`, "bad");
+    setText("payStatus", `Request #${id} not found.`, "bad");
     return null;
   }
   const lines = [
@@ -117,20 +125,21 @@ async function loadRequest(id) {
     `Paid by ${r.paidBy === ethers.ZeroAddress ? "-" : r.paidBy}`,
     lastLink || payUrl(id)
   ];
-  setText("payStatus", lines.join("\n"), Number(r.status) === 2 ? "ok" : Number(r.status) === 1 ? "warn" : "bad");
+  const cls = Number(r.status) === 2 ? "ok" : Number(r.status) === 1 ? "warn" : "bad";
+  setText("payStatus", lines.join("\n"), cls);
   return r;
 }
 
 async function createRequest() {
-  if (!signer) return setText("createStatus", "Connect wallet trước.", "bad");
+  if (!signer) return setText("createStatus", "Connect a wallet first.", "bad");
   if (!(await ensureNetwork(true))) return;
   const amount = ethers.parseUnits(String($("amount").value || "0"), 6);
-  if (amount <= 0n) return setText("createStatus", "Amount > 0.", "bad");
+  if (amount <= 0n) return setText("createStatus", "Amount must be greater than 0.", "bad");
   const memo = $("memo").value || "";
   const payerHint = ($("payerHint").value || "").trim() || ethers.ZeroAddress;
   const hours = Number($("hours").value || 0);
   const deadline = hours > 0 ? BigInt(Math.floor(Date.now() / 1000) + hours * 3600) : 0n;
-  setText("createStatus", "Đang createRequest…");
+  setText("createStatus", "Creating request…");
   const { paylink } = contracts();
   const tx = await paylink.createRequest(amount, memo, payerHint, deadline);
   const rec = await tx.wait();
@@ -150,7 +159,7 @@ async function createRequest() {
 }
 
 async function approve() {
-  if (!signer) return setText("payStatus", "Connect trước.", "bad");
+  if (!signer) return setText("payStatus", "Connect a wallet first.", "bad");
   if (!(await ensureNetwork(true))) return;
   const r = await loadRequest(Number($("reqId").value));
   if (!r) return;
@@ -160,15 +169,15 @@ async function approve() {
 }
 
 async function pay() {
-  if (!signer) return setText("payStatus", "Connect trước.", "bad");
+  if (!signer) return setText("payStatus", "Connect a wallet first.", "bad");
   if (!(await ensureNetwork(true))) return;
   const id = Number($("reqId").value);
   const r = await loadRequest(id);
   if (!r) return;
-  if (Number(r.status) !== 1) return setText("payStatus", "Không còn Open.", "bad");
+  if (Number(r.status) !== 1) return setText("payStatus", "Request is not open.", "bad");
   const { usdc, paylink } = contracts();
   if ((await usdc.allowance(account, PAYLINK)) < r.amount) {
-    return setText("payStatus", "Cần Approve trước.", "warn");
+    return setText("payStatus", "Approve USDC first.", "warn");
   }
   const tx = await paylink.pay(id);
   await tx.wait();
@@ -178,12 +187,12 @@ async function pay() {
 }
 
 async function cancel() {
-  if (!signer) return setText("payStatus", "Connect trước.", "bad");
+  if (!signer) return setText("payStatus", "Connect a wallet first.", "bad");
   if (!(await ensureNetwork(true))) return;
   const id = Number($("reqId").value);
   const tx = await contracts().paylink.cancel(id);
   await tx.wait();
-  setText("payStatus", `Canceled #${id}`, "ok");
+  setText("payStatus", `Canceled #${id}\n${EXPLORER}/tx/${tx.hash}`, "ok");
   await loadRequest(id);
   await refreshActivity();
 }
@@ -197,20 +206,24 @@ async function refreshActivity() {
   for (let i = next - 1n; i >= from; i--) {
     const r = await c.getRequest(i);
     if (Number(r.status) === 0) continue;
+    const st = STATUS[Number(r.status)];
     rows.push(`<tr>
-      <td>#${i}</td>
-      <td>${ethers.formatUnits(r.amount, 6)}</td>
-      <td>${STATUS[Number(r.status)]}</td>
+      <td class="mono">#${i}</td>
+      <td>${ethers.formatUnits(r.amount, 6)} USDC</td>
+      <td><span class="badge ${st.toLowerCase()}">${st}</span></td>
       <td class="mono">${short(r.recipient)}</td>
-      <td>${(r.memo || "").slice(0, 28)}</td>
+      <td>${(r.memo || "—").slice(0, 32)}</td>
     </tr>`);
   }
   $("statOpen").textContent = String(rows.length);
-  $("tbody").innerHTML = rows.join("") || `<tr><td colspan="5">Chưa có request</td></tr>`;
+  $("tbody").innerHTML = rows.join("") || `<tr><td colspan="5">No requests yet</td></tr>`;
 }
 
 $("btnConnect").onclick = connect;
-$("btnNetwork").onclick = async () => { if (!provider) await connect(); await ensureNetwork(true); };
+$("btnNetwork").onclick = async () => {
+  if (!provider) await connect();
+  await ensureNetwork(true);
+};
 $("btnCreate").onclick = createRequest;
 $("btnLoad").onclick = () => loadRequest(Number($("reqId").value));
 $("btnApprove").onclick = approve;
@@ -220,9 +233,11 @@ $("btnRefresh").onclick = refreshActivity;
 $("btnCopy").onclick = async () => {
   if (!lastLink) lastLink = payUrl($("reqId").value);
   await navigator.clipboard.writeText(lastLink);
-  setText("createStatus", "Đã copy link.", "ok");
+  setText("createStatus", "Link copied.", "ok");
 };
-$("btnOpen").onclick = () => { if (lastLink) location.href = lastLink; };
+$("btnOpen").onclick = () => {
+  if (lastLink) location.href = lastLink;
+};
 
 (async function init() {
   const id = new URLSearchParams(location.search).get("id");
@@ -234,6 +249,6 @@ $("btnOpen").onclick = () => { if (lastLink) location.href = lastLink; };
     if (id) await loadRequest(id);
     await refreshActivity();
   } catch (e) {
-    setText("payStatus", "RPC lỗi: " + (e.message || e), "bad");
+    setText("payStatus", "RPC error: " + (e.message || e), "bad");
   }
 })();
