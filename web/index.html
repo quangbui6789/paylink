@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PayLink — USDC payment links on Arc</title>
+  <meta name="description" content="Create a link. Get paid in USDC on Arc Testnet. Non-custodial." />
+  <style>
+    :root {
+      --bg: #070b14;
+      --bg2: #0c1222;
+      --card: rgba(16, 24, 44, .86);
+      --line: rgba(120, 150, 210, .18);
+      --text: #f3f6ff;
+      --muted: #93a0c2;
+      --accent: #5b8cff;
+      --accent2: #7ef0c3;
+      --warn: #f5c542;
+      --bad: #ff6b8a;
+      --shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      background:
+        radial-gradient(900px 500px at 8% -10%, rgba(70,110,255,.28), transparent 55%),
+        radial-gradient(700px 400px at 100% 0%, rgba(70,255,190,.12), transparent 50%),
+        var(--bg);
+    }
+    a { color: #9cbcff; text-decoration: none; }
+    .nav {
+      position: sticky; top: 0; z-index: 20;
+      display: flex; gap: 10px; align-items: center; justify-content: space-between;
+      padding: 14px 22px;
+      background: rgba(7,11,20,.78);
+      backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { display: flex; gap: 10px; align-items: center; font-weight: 800; letter-spacing: .02em; }
+    .logo {
+      width: 28px; height: 28px; border-radius: 9px;
+      background: linear-gradient(135deg, #5b8cff, #7ef0c3);
+    }
+    .nav a.menu { color: var(--muted); font-size: 14px; padding: 6px 8px; }
+    .nav a.menu:hover { color: white; }
+    .wrap { max-width: 1080px; margin: 0 auto; padding: 28px 18px 90px; }
+    .hero { display: grid; grid-template-columns: 1.2fr .8fr; gap: 28px; align-items: center; padding: 28px 0 10px; }
+    h1 { font-size: 52px; line-height: 1.05; margin: 0 0 12px; }
+    .sub { color: var(--muted); font-size: 18px; max-width: 560px; }
+    .pills { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0; }
+    .pill {
+      border: 1px solid var(--line); background: rgba(255,255,255,.04);
+      padding: 5px 10px; border-radius: 999px; font-size: 12px; color: var(--muted);
+    }
+    .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    button, .btn {
+      border: 0; cursor: pointer; border-radius: 12px;
+      padding: 11px 14px; font-weight: 700; color: #061018;
+      background: linear-gradient(135deg, #7aa6ff, #7ef0c3);
+    }
+    button.ghost, .btn.ghost { background: #1a2540; color: white; }
+    button.danger { background: #6e2233; color: white; }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .card {
+      background: var(--card); border: 1px solid var(--line);
+      border-radius: 20px; padding: 18px; box-shadow: var(--shadow);
+    }
+    .grid3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-top: 28px; }
+    .stat { font-size: 28px; font-weight: 800; }
+    section { margin-top: 42px; }
+    h2 { margin: 0 0 8px; font-size: 28px; }
+    label { display: block; margin: 10px 0 6px; color: var(--muted); font-size: 13px; }
+    input {
+      width: 100%; padding: 12px; border-radius: 12px;
+      border: 1px solid var(--line); background: #0b1222; color: white;
+    }
+    .status { margin-top: 12px; white-space: pre-wrap; color: var(--muted); min-height: 1.3em; }
+    .ok { color: var(--accent2); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--line); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-all; }
+    footer { margin-top: 60px; color: var(--muted); font-size: 13px; }
+    @media (max-width: 860px) {
+      .hero, .split, .grid3 { grid-template-columns: 1fr; }
+      h1 { font-size: 36px; }
+      .nav .menus { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="nav">
+    <div class="brand"><div class="logo"></div> PayLink</div>
+    <div class="menus">
+      <a class="menu" href="#create">Create</a>
+      <a class="menu" href="#pay">Pay</a>
+      <a class="menu" href="#activity">Activity</a>
+      <a class="menu" href="#about">About</a>
+    </div>
+    <div class="row">
+      <span class="pill" id="walletPill">chưa kết nối</span>
+      <button class="ghost" id="btnNetwork">Arc Testnet</button>
+      <button id="btnConnect">Connect</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="hero">
+      <div>
+        <div class="pills">
+          <span class="pill">Arc Testnet · 5042002</span>
+          <span class="pill">USDC 6 decimals</span>
+          <span class="pill">Non-custodial</span>
+        </div>
+        <h1>Nhận USDC bằng một link.</h1>
+        <p class="sub">Tạo payment request on-chain. Gửi link. Đối phương approve + pay. Tiền vào ví nhận ngay — không custody, không backend.</p>
+        <div class="row">
+          <a class="btn" href="#create">Tạo PayLink</a>
+          <a class="btn ghost" href="#pay">Thanh toán request</a>
+        </div>
+        <div class="status" id="netStatus"></div>
+      </div>
+      <div class="card">
+        <div class="pill">Live contract</div>
+        <p class="mono" style="margin:12px 0 8px">PayLink<br>0xCaF9…94e1</p>
+        <p class="mono" style="margin:0 0 12px">USDC<br>0x3600…0000</p>
+        <div class="row">
+          <div><div class="stat" id="statNext">—</div><div class="pill">nextId</div></div>
+          <div><div class="stat" id="statOpen">—</div><div class="pill">loaded</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid3">
+      <div class="card"><h3>1. Create</h3><p class="sub">On-chain request: số tiền, memo, hạn, optional payer.</p></div>
+      <div class="card"><h3>2. Share</h3><p class="sub">Một URL `?id=N`. Mở được trên Vercel / Pages.</p></div>
+      <div class="card"><h3>3. Settle</h3><p class="sub">Payer approve USDC rồi `pay()`. Recipient nhận thẳng.</p></div>
+    </div>
+
+    <section id="create">
+      <h2>Create request</h2>
+      <p class="sub">Recipient = ví đang connect. Link dùng để nhận tiền.</p>
+      <div class="split">
+        <div class="card">
+          <label>Số USDC</label>
+          <input id="amount" type="number" min="0" step="0.01" value="1" />
+          <label>Memo</label>
+          <input id="memo" placeholder="Arc builder demo" />
+          <label>Payer hint (trống = public)</label>
+          <input id="payerHint" placeholder="0x..." />
+          <label>Hết hạn sau (giờ, 0 = không hạn)</label>
+          <input id="hours" type="number" min="0" value="72" />
+          <div class="row" style="margin-top:14px">
+            <button id="btnCreate">Create PayLink</button>
+          </div>
+          <div class="status" id="createStatus"></div>
+        </div>
+        <div class="card">
+          <h3>Link vừa tạo</h3>
+          <p class="mono" id="shareLink">Chưa có. Tạo request trước.</p>
+          <div class="row" style="margin-top:12px">
+            <button class="ghost" id="btnCopy">Copy link</button>
+            <button class="ghost" id="btnOpen">Mở link</button>
+          </div>
+          <img id="qr" alt="" style="display:none;margin-top:14px;width:180px;border-radius:12px" />
+        </div>
+      </div>
+    </section>
+
+    <section id="pay">
+      <h2>Pay / inspect</h2>
+      <div class="card">
+        <label>Request ID</label>
+        <input id="reqId" type="number" min="1" value="2" />
+        <div class="row" style="margin-top:14px">
+          <button class="ghost" id="btnLoad">Load</button>
+          <button id="btnApprove">Approve USDC</button>
+          <button id="btnPay">Pay</button>
+          <button class="danger" id="btnCancel">Cancel</button>
+        </div>
+        <div class="status" id="payStatus"></div>
+      </div>
+    </section>
+
+    <section id="activity">
+      <h2>On-chain activity</h2>
+      <p class="sub">Đọc event `RequestCreated` gần đây từ contract.</p>
+      <div class="card">
+        <div class="row">
+          <button class="ghost" id="btnRefresh">Refresh</button>
+        </div>
+        <div style="overflow:auto;margin-top:10px">
+          <table>
+            <thead><tr><th>ID</th><th>Amount</th><th>Status</th><th>Recipient</th><th>Memo</th></tr></thead>
+            <tbody id="tbody"><tr><td colspan="5">Bấm Refresh</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="about">
+      <h2>Builder brief</h2>
+      <div class="split">
+        <div class="card">
+          <h3>PayLink là gì</h3>
+          <p class="sub">Payment-request primitive trên Arc: invoice on-chain, settlement USDC, link share được. Phù hợp checkout, chia bill, bounty nhỏ, demo builder.</p>
+          <ul class="sub">
+            <li>Create / pay / cancel on-chain</li>
+            <li>Optional payer whitelist (`payerHint`)</li>
+            <li>Deadline + memo</li>
+            <li>Không giữ tiền hộ</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>Addresses</h3>
+          <p class="mono">Chain ID 5042002<br>RPC https://rpc.testnet.arc.io/<br>Explorer https://testnet.arcscan.app<br>PayLink 0xCaF923cd2FcE2f8852c9Bc8D7cD3aE79023594e1<br>USDC 0x3600000000000000000000000000000000000000</p>
+        </div>
+      </div>
+    </section>
+
+    <footer>PayLink · Arc Testnet builder demo · non-custodial USDC requests</footer>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.5/dist/ethers.umd.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>
